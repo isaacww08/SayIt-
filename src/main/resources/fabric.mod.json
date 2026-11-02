@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "sayit",
+  "version": "${version}",
+  "name": "Say It",
+  "description": "Every item you pick up or drop must be said out loud in your chosen language within 15 seconds, or it's gone.",
+  "authors": ["you"],
+  "icon": "assets/sayit/icon.png",
+  "environment": "client",
+  "entrypoints": { "client": ["sayit.SayIt"] },
+  "depends": {
+    "fabricloader": ">=0.18.0",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

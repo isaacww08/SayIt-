@@ -1,0 +1,19 @@
+{
+  "apple": "Apfel", "bread": "Brot", "oak_sapling": "Eichensetzling", "iron_helmet": "Eisenhelm",
+  "spectral_arrow": "Spektralpfeil", "gravel": "Kies", "stick": "Stock", "dirt": "Erde",
+  "cobblestone": "Bruchstein", "oak_log": "Eichenstamm", "oak_planks": "Eichenholzbretter",
+  "crafting_table": "Werkbank", "furnace": "Ofen", "coal": "Kohle", "iron_ingot": "Eisenbarren",
+  "gold_ingot": "Goldbarren", "diamond": "Diamant", "torch": "Fackel", "sand": "Sand", "glass": "Glas",
+  "wheat": "Weizen", "wheat_seeds": "Weizensamen", "carrot": "Karotte", "potato": "Kartoffel",
+  "cooked_beef": "Steak", "arrow": "Pfeil", "bow": "Bogen", "iron_sword": "Eisenschwert",
+  "iron_pickaxe": "Eisenspitzhacke", "wooden_pickaxe": "Holzspitzhacke", "stone_pickaxe": "Steinspitzhacke",
+  "diamond_pickaxe": "Diamantspitzhacke", "iron_axe": "Eisenaxt", "iron_shovel": "Eisenschaufel",
+  "chest": "Truhe", "bucket": "Eimer", "water_bucket": "Wassereimer", "lava_bucket": "Lavaeimer",
+  "egg": "Ei", "milk_bucket": "Milcheimer", "flint": "Feuerstein", "feather": "Feder", "string": "Faden",
+  "bone": "Knochen", "gunpowder": "Schießpulver", "emerald": "Smaragd", "redstone": "Redstone",
+  "ladder": "Leiter", "shield": "Schild", "book": "Buch", "paper": "Papier", "sugar": "Zucker",
+  "pumpkin": "Kürbis", "melon_slice": "Melonenscheibe", "cactus": "Kaktus", "stone": "Stein",
+  "granite": "Granit", "diorite": "Diorit", "andesite": "Andesit", "snowball": "Schneeball",
+  "clay_ball": "Tonklumpen", "cookie": "Keks", "cake": "Kuchen", "saddle": "Sattel",
+  "compass": "Kompass", "clock": "Uhr"
+}
