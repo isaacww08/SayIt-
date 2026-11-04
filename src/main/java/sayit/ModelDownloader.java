@@ -20,8 +20,23 @@ public final class ModelDownloader {
     /** 0..1, or -1 when unknown */
     public static volatile double progress = -1;
 
+    private static volatile boolean busy = false;
+
+    public static String url(Language lang) {
+        return "https://alphacephei.com/vosk/models/" + lang.voskModel() + ".zip";
+    }
+
+    /**
+     * Downloads the model. ONLY call this after the user has clicked "Download" on the consent screen.
+     */
     public static boolean ensure(Language lang) {
         if (SayIt.modelInstalled(lang.code())) return true;
+        if (busy) return false;
+        busy = true;
+        try { return doEnsure(lang); } finally { busy = false; }
+    }
+
+    private static boolean doEnsure(Language lang) {
         Path modelsDir = SayIt.dir().resolve("models");
         Path target = modelsDir.resolve(lang.code());
         Path tmp = modelsDir.resolve(lang.code() + ".zip.part");
@@ -32,7 +47,7 @@ public final class ModelDownloader {
 
             HttpClient client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
             HttpRequest req = HttpRequest.newBuilder(
-                    URI.create("https://alphacephei.com/vosk/models/" + lang.voskModel() + ".zip")).build();
+                    URI.create(url(lang))).build();
             HttpResponse<InputStream> resp = client.send(req, HttpResponse.BodyHandlers.ofInputStream());
             if (resp.statusCode() != 200) throw new IOException("HTTP " + resp.statusCode());
             long total = resp.headers().firstValueAsLong("content-length").orElse(-1);

@@ -58,7 +58,10 @@ public class SayIt implements ClientModInitializer {
         return looksLikeModel(modelDir(code));
     }
 
-    /** Switch language: reload words, fetch the speech model if missing, restart recogniser (all off-thread). */
+    /**
+     * Switch language: reload words and start the recogniser IF its model is already installed.
+     * This never downloads anything. Downloads only happen via downloadAndUse(), after the user consented.
+     */
     public static void setLanguage(String code) {
         Config.lang = code;
         Config.save();
@@ -66,10 +69,21 @@ public class SayIt implements ClientModInitializer {
         Thread t = new Thread(() -> {
             speech.stop();
             Words.load(code);
-            if (!ModelDownloader.ensure(Language.byCode(code))) return;
-            if (!Config.lang.equals(code)) return;          // user switched again meanwhile
+            if (!modelInstalled(code)) return;
+            if (!Config.lang.equals(code)) return;
             if (!speech.start(modelDir(code))) LOG.warn("No working Vosk model for '{}' in {}", code, modelDir(code));
         }, "sayit-model-load");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    /** Called ONLY from the consent screen's "Download" button. */
+    public static void downloadAndUse(Language lang) {
+        Thread t = new Thread(() -> {
+            if (!ModelDownloader.ensure(lang)) return;
+            if (!Config.lang.equals(lang.code())) return;   // user switched language meanwhile
+            if (!speech.start(modelDir(lang.code()))) LOG.warn("Model installed but failed to start for '{}'", lang.code());
+        }, "sayit-model-download");
         t.setDaemon(true);
         t.start();
     }

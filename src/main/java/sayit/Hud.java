@@ -23,6 +23,7 @@ public final class Hud {
             ctx.drawItem(f.icon, x + 8, y + 7);
             ctx.drawText(tr, f.title, x + 30, y + 6, f.color, true);
             ctx.drawText(tr, f.sub, x + 30, y + 17, WHITE, true);
+            if (f.splash) splash(ctx, tr, f, now, mc.getWindow().getScaledWidth(), mc.getWindow().getScaledHeight());
         } else if (cm.active != null) {
             ChallengeManager.Active a = cm.active;
             panel(ctx, x, y, w, h, GOLD);
@@ -60,9 +61,45 @@ public final class Hud {
         }
         boolean on = SayIt.speech != null && SayIt.speech.isRunning();
         boolean loading = SayIt.speech != null && SayIt.speech.loading;
-        String status = loading ? "loading model..." : (on ? "mic on" : "mic off (no model for " + Config.lang + ")");
+        String status = loading ? "loading model..." : (on ? "mic on" : "no speech model for " + Config.lang + " - press K");
         if (cm.waiting() > 0) status = cm.waiting() + " waiting  |  " + status;
         if (Config.enabled) ctx.drawText(tr, status, 3, sh - 10, on ? 0xFF55FF55 : (loading ? 0xFFFFD83D : 0xFFFF5555), true);
+    }
+
+    private static final int[][] OUTLINE = {{1,0},{-1,0},{0,1},{0,-1},{1,1},{-1,-1},{1,-1},{-1,1}};
+
+    /** Big green "UNLOCKED" with the item icon and the word underneath. Fades out at the end. */
+    private static void splash(DrawContext ctx, TextRenderer tr, ChallengeManager.Flash f, long now, int sw, int sh) {
+        long left = f.until - now;
+        int a = (int) (255 * Math.min(1.0, left / 400.0));
+        if (a < 8) return;
+        int green = (a << 24) | 0x55FF55, dark = (a << 24) | 0x0B2A0B, white = (a << 24) | 0xFFFFFF;
+
+        String t = "UNLOCKED";
+        float s = Math.min(4f, (sw - 100f) / tr.getWidth(t));
+        float tw = tr.getWidth(t) * s, th = 8 * s;
+        float iconS = 2f, iconW = 16 * iconS;
+        float x0 = (sw - (iconW + 8 + tw)) / 2f, y0 = sh * 0.26f;
+
+        ctx.getMatrices().pushMatrix();
+        ctx.getMatrices().translate(x0, y0 + (th - 16 * iconS) / 2f);
+        ctx.getMatrices().scale(iconS, iconS);
+        ctx.drawItem(f.icon, 0, 0);
+        ctx.getMatrices().popMatrix();
+
+        ctx.getMatrices().pushMatrix();
+        ctx.getMatrices().translate(x0 + iconW + 8, y0);
+        ctx.getMatrices().scale(s, s);
+        for (int[] o : OUTLINE) ctx.drawText(tr, t, o[0], o[1], dark, false);
+        ctx.drawText(tr, t, 0, 0, green, false);
+        ctx.getMatrices().popMatrix();
+
+        float ws = 2f;
+        ctx.getMatrices().pushMatrix();
+        ctx.getMatrices().translate((sw - tr.getWidth(f.title) * ws) / 2f, y0 + th + 8);
+        ctx.getMatrices().scale(ws, ws);
+        ctx.drawText(tr, f.title, 0, 0, white, true);
+        ctx.getMatrices().popMatrix();
     }
 
     private static void panel(DrawContext ctx, int x, int y, int w, int h, int accent) {

@@ -25,7 +25,7 @@ public class LanguageScreen extends Screen {
 
         int cols = 2, bw = 150, bh = 20, gap = 4;
         int rows = (Language.ALL.size() + cols - 1) / cols;
-        int totalH = rows * (bh + gap) + 8 + 2 * (bh + gap) + 6 + bh;
+        int totalH = rows * (bh + gap) + 8 + 3 * (bh + gap) + 6 + bh;
         int x0 = width / 2 - (bw * cols + gap) / 2;
         int y0 = Math.max(26, (height - totalH) / 2);
         titleY = y0 - 16;
@@ -36,11 +36,12 @@ public class LanguageScreen extends Screen {
             String suffix;
             if (SayIt.modelInstalled(lang.code())) suffix = "";
             else if (sel && ModelDownloader.status != null) suffix = "  (downloading...)";
-            else suffix = "  (download)";
+            else suffix = "  (needs download)";
             String label = (sel ? "> " : "") + lang.name() + suffix;
             addDrawableChild(ButtonWidget.builder(Text.literal(label), b -> {
                 SayIt.setLanguage(lang.code());
-                clearAndInit();
+                if (SayIt.modelInstalled(lang.code())) clearAndInit();
+                else client.setScreen(new ConfirmDownloadScreen(this, lang));
             }).dimensions(x0 + (i % cols) * (bw + gap), y0 + (i / cols) * (bh + gap), bw, bh).build());
         }
 
@@ -56,8 +57,13 @@ public class LanguageScreen extends Screen {
             Config.showWord = !Config.showWord; Config.save(); clearAndInit();
         }).dimensions(x0, y + bh + gap, full, bh).build());
 
+        addDrawableChild(ButtonWidget.builder(
+                Text.literal("Reset unlocked words (" + SayIt.challenges.unlockedCount() + ")"), b -> {
+            SayIt.challenges.resetUnlocked(); clearAndInit();
+        }).dimensions(x0, y + 2 * (bh + gap), full, bh).build());
+
         addDrawableChild(ButtonWidget.builder(Text.literal("Done"), b -> close())
-                .dimensions(x0, y + 2 * (bh + gap) + 6, full, bh).build());
+                .dimensions(x0, y + 3 * (bh + gap) + 6, full, bh).build());
     }
 
     @Override

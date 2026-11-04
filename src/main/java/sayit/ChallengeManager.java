@@ -15,6 +15,13 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Box;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -35,7 +42,7 @@ public class ChallengeManager {
         public Event ev; public String word; public ItemStack icon; public long startMs, endMs;
     }
     public static final class Flash {
-        public ItemStack icon; public String title, sub; public int color; public long until;
+        public ItemStack icon; public String title, sub; public int color; public long until; public boolean splash;
     }
 
     public Active active;
@@ -45,6 +52,8 @@ public class ChallengeManager {
     public int waiting() { return queue.size(); }
 
     private final Deque<Event> queue = new ArrayDeque<>();
+    private final Set<String> unlocked = new HashSet<>();
+    private String progressKey = "";
     private final ConcurrentLinkedQueue<SpeechEngine.Heard> heardQ = new ConcurrentLinkedQueue<>();
 
     private Map<String, Integer> prevCounts = new HashMap<>();
@@ -61,6 +70,10 @@ public class ChallengeManager {
     public void tick(MinecraftClient mc) {
         if (mc.player == null) { inWorld = false; clear(); return; }
         if (!inWorld) { inWorld = true; grace = 60; prevCounts = counts(mc.player); prevMainId = ""; }
+
+        // unlocked items are remembered per world AND per language
+        String pk = keyFor(mc) + "_" + Config.lang;
+        if (!pk.equals(progressKey)) { progressKey = pk; loadProgress(); queue.clear(); active = null; }
 
         long now = System.currentTimeMillis();
         Map<String, Integer> counts = counts(mc.player);
@@ -103,7 +116,7 @@ public class ChallengeManager {
     }
 
     private void enqueue(String id, Kind kind, int amount) {
-        if (!Words.has(id)) return;
+        if (!Words.has(id) || unlocked.contains(id)) return;   // already unlocked = no challenge
         if (active != null && active.ev.id.equals(id) && active.ev.kind == kind) { active.ev.amount += amount; return; }
         for (Event q : queue) if (q.id.equals(id) && q.kind == kind) { q.amount += amount; return; }
         queue.add(new Event(id, kind, amount));
@@ -122,7 +135,13 @@ public class ChallengeManager {
     }
 
     private void succeed(MinecraftClient mc) {
-        flash = flash(active.icon, active.word, "CORRECT " + Math.min(100, lastPct) + "%", 0xFF55FF55);
+        String id = active.ev.id;
+        unlocked.add(id);
+        saveProgress();
+        queue.removeIf(e -> e.id.equals(id));
+        flash = flash(active.icon, active.word, "UNLOCKED " + Math.min(100, lastPct) + "%", 0xFF55FF55);
+        flash.splash = true;
+        flash.until = System.currentTimeMillis() + 2200;
         mc.getSoundManager().play(PositionedSoundInstance.ui(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f));
         active = null;
     }
@@ -154,6 +173,41 @@ public class ChallengeManager {
         f.icon = icon; f.title = title; f.sub = sub; f.color = color;
         f.until = System.currentTimeMillis() + 1800;
         return f;
+    }
+
+    // ---- unlock persistence ------------------------------------------------
+    public int unlockedCount() { return unlocked.size(); }
+
+    public void resetUnlocked() { unlocked.clear(); saveProgress(); }
+
+    private static String keyFor(MinecraftClient mc) {
+        String k = "unknown";
+        if (mc.getServer() != null) k = mc.getServer().getSaveProperties().getLevelName();
+        else if (mc.getCurrentServerEntry() != null) k = mc.getCurrentServerEntry().address;
+        return k.replaceAll("[^a-zA-Z0-9_.-]", "_");
+    }
+
+    private Path progressFile() { return SayIt.dir().resolve("progress_" + progressKey + ".json"); }
+
+    private void loadProgress() {
+        unlocked.clear();
+        try {
+            if (Files.exists(progressFile())) {
+                JsonObject o = JsonParser.parseString(Files.readString(progressFile())).getAsJsonObject();
+                o.getAsJsonArray("unlocked").forEach(e -> unlocked.add(e.getAsString()));
+            }
+        } catch (Exception e) { SayIt.LOG.warn("Couldn't read progress", e); }
+    }
+
+    private void saveProgress() {
+        try {
+            Files.createDirectories(SayIt.dir());
+            JsonObject o = new JsonObject();
+            JsonArray arr = new JsonArray();
+            unlocked.stream().sorted().forEach(arr::add);
+            o.add("unlocked", arr);
+            Files.writeString(progressFile(), new Gson().toJson(o));
+        } catch (Exception e) { SayIt.LOG.warn("Couldn't save progress", e); }
     }
 
     // ---- inventory helpers -------------------------------------------------
